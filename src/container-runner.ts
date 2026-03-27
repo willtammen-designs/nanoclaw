@@ -25,6 +25,7 @@ import {
   stopContainer,
 } from './container-runtime.js';
 import { OneCLI } from '@onecli-sh/sdk';
+import { readEnvFile } from './env.js';
 import { validateAdditionalMounts } from './mount-security.js';
 import { RegisteredGroup } from './types.js';
 
@@ -244,8 +245,24 @@ async function buildContainerArgs(
   } else {
     logger.warn(
       { containerName },
-      'OneCLI gateway not reachable — container will have no credentials',
+      'OneCLI gateway not reachable — falling back to direct API key injection',
     );
+    const envConfig = readEnvFile(['ANTHROPIC_API_KEY', 'ANTHROPIC_BASE_URL']);
+    if (envConfig.ANTHROPIC_API_KEY) {
+      args.push('-e', `ANTHROPIC_API_KEY=${envConfig.ANTHROPIC_API_KEY}`);
+      if (envConfig.ANTHROPIC_BASE_URL) {
+        args.push('-e', `ANTHROPIC_BASE_URL=${envConfig.ANTHROPIC_BASE_URL}`);
+      }
+      logger.info(
+        { containerName },
+        'Injected ANTHROPIC_API_KEY from .env as fallback',
+      );
+    } else {
+      logger.error(
+        { containerName },
+        'No ANTHROPIC_API_KEY in .env — container will have no credentials',
+      );
+    }
   }
 
   // Runtime-specific args for host gateway resolution
