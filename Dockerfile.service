@@ -1,0 +1,19 @@
+FROM node:22-slim
+
+# Install Docker CLI only (no daemon — uses host socket via passthrough)
+RUN apt-get update && apt-get install -y ca-certificates curl gnupg \
+    && install -m 0755 -d /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
+    && chmod a+r /etc/apt/keyrings/docker.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian bookworm stable" \
+       > /etc/apt/sources.list.d/docker.list \
+    && apt-get update && apt-get install -y docker-ce-cli \
+    && rm -rf /var/lib/apt/lists/*
+
+# IMPORTANT: working dir must match the host path where nanoclaw is cloned.
+# NanoClaw uses process.cwd() to build Docker volume mount paths, which the
+# host daemon interprets. If this path doesn't match the host path, agent
+# container mounts will fail.
+WORKDIR /opt/nanoclaw
+
+CMD ["node", "dist/index.js"]

@@ -1,0 +1,24 @@
+services:
+  nanoclaw:
+    build:
+      context: /opt/nanoclaw
+      dockerfile: Dockerfile.service
+    image: nanoclaw:latest
+    container_name: nanoclaw
+    working_dir: /opt/nanoclaw
+    volumes:
+      # Same-path bind mount: process.cwd() inside container = /opt/nanoclaw,
+      # which is a valid host path for Docker volume mounts in spawned agent containers.
+      - /opt/nanoclaw:/opt/nanoclaw
+      # Docker socket passthrough: lets NanoClaw spawn sibling agent containers
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Persistent home dir for ~/.config/nanoclaw/ allowlists and ~/.claude/ session data
+      - nanoclaw-home:/root
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+    environment:
+      - TZ=America/Los_Angeles
+
+volumes:
+  nanoclaw-home:
